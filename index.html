@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exam Assistant</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    background: linear-gradient(135deg, #eef1f6, #dfe6f1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* main app */
+.app-shell {
+    width: 95%;
+    max-width: 1100px;
+    height: 92vh;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    border-radius: 30px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(25px);
+    box-shadow: 0 25px 70px rgba(0,0,0,0.2);
+}
+
+/* sidebar */
+.sidebar {
+    padding: 30px;
+    background: rgba(250,250,250,0.7);
+    border-right: 1px solid rgba(0,0,0,0.08);
+}
+
+.traffic {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 30px;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.red { background:#ff5f57; }
+.yellow { background:#ffbd2e; }
+.green { background:#28c840; }
+
+.sidebar h1 {
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+
+.sidebar p {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 25px;
+}
+
+.quick-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.quick-buttons button {
+    padding: 12px;
+    border-radius: 14px;
+    border: none;
+    background: white;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    transition: 0.2s;
+}
+
+.quick-buttons button:hover {
+    transform: translateY(-2px);
+}
+
+/* chat area */
+.chat-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.chat-header {
+    padding: 25px;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.chat-header h2 {
+    font-size: 20px;
+}
+
+.chat-box {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* messages bubble */
+.message {
+    max-width: 75%;
+    padding: 12px 15px;
+    border-radius: 18px;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.user-message {
+    margin-left: auto;
+    background: linear-gradient(135deg, #007aff, #5856d6);
+    color: white;
+}
+
+.bot-message {
+    margin-right: auto;
+    background: white;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* input */
+.input-area {
+    padding: 15px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.input-area input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+}
+
+.input-area button {
+    padding: 12px 18px;
+    border-radius: 20px;
+    border: none;
+    background: #007aff;
+    color: white;
+    cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app-shell">
+
+    <!-- sidebar -->
+    <div class="sidebar">
+        <div class="traffic">
+            <div class="dot red"></div>
+            <div class="dot yellow"></div>
+            <div class="dot green"></div>
+        </div>
+
+        <h1>Exam Assistant</h1>
+        <p>University chatbot for exam support.</p>
+
+        <div class="quick-buttons">
+            <button onclick="quickAsk('When are exam dates?')">Exam Dates</button>
+            <button onclick="quickAsk('Where is my timetable?')">Timetable</button>
+            <button onclick="quickAsk('What are the rules?')">Rules</button>
+            <button onclick="quickAsk('What happens if I fail?')">Resits</button>
+            <button onclick="quickAsk('I feel stressed')">Stress</button>
+        </div>
+    </div>
+
+    <!-- chat -->
+    <div class="chat-panel">
+
+        <div class="chat-header">
+            <h2>University of Staffordshire Exam Support</h2>
+        </div>
+
+        <div class="chat-box" id="chatBox">
+            <div class="message bot-message">
+                Hello! I’m your Exam Support Chatbot. How can I help you today?
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input id="userInput" placeholder="Type your question..." onkeydown="handleKey(event)">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const chatBox = document.getElementById("chatBox");
+
+function addMessage(msg, cls) {
+    const div = document.createElement("div");
+    div.className = "message " + cls;
+    div.textContent = msg;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+async function sendMessage() {
+    const input = document.getElementById("userInput");
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    addMessage(msg, "user-message");
+    input.value = "";
+
+    const res = await fetch("/get_response", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({message: msg})
+    });
+
+    const data = await res.json();
+    addMessage(data.response, "bot-message");
+}
+
+function quickAsk(q) {
+    document.getElementById("userInput").value = q;
+    sendMessage();
+}
+
+function handleKey(e) {
+    if (e.key === "Enter") sendMessage();
+}
+</script>
+
+</body>
+</html>
